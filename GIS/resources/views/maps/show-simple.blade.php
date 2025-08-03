@@ -34,9 +34,33 @@
                             <!-- Image Section -->
                             <div class="lg:col-span-1">
                                 @if($mapImage->map_image_path && file_exists(public_path('storage/' . $mapImage->map_image_path)))
-                                    <img src="{{ asset('storage/' . $mapImage->map_image_path) }}" alt="{{ $mapImage->title }}" class="w-full h-auto rounded-lg shadow-md">
+                                    <div class="relative group cursor-pointer" onclick="openImageModal('{{ asset('storage/' . $mapImage->map_image_path) }}', '{{ $mapImage->title }}')">
+                                        <img src="{{ asset('storage/' . $mapImage->map_image_path) }}" alt="{{ $mapImage->title }}" class="w-full h-auto rounded-lg shadow-md transition-transform duration-300 hover:scale-105">
+                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                            <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                            Click to enlarge
+                                        </div>
+                                    </div>
                                 @elseif($mapImage->file_path && file_exists(public_path('storage/' . $mapImage->file_path)))
-                                    <img src="{{ asset('storage/' . $mapImage->file_path) }}" alt="{{ $mapImage->title }}" class="w-full h-auto rounded-lg shadow-md">
+                                    <div class="relative group cursor-pointer" onclick="openImageModal('{{ asset('storage/' . $mapImage->file_path) }}', '{{ $mapImage->title }}')">
+                                        <img src="{{ asset('storage/' . $mapImage->file_path) }}" alt="{{ $mapImage->title }}" class="w-full h-auto rounded-lg shadow-md transition-transform duration-300 hover:scale-105">
+                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                            <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                            Click to enlarge
+                                        </div>
+                                    </div>
                                 @else
                                     <div class="w-full h-48 bg-gray-200 rounded-lg shadow-md flex items-center justify-center">
                                         <div class="text-center">
@@ -216,5 +240,77 @@
             </div>
         </main>
     </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-4 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white max-h-screen">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modalTitle" class="text-lg font-medium text-gray-900">{{ $mapImage->title }}</h3>
+                    <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors" onclick="closeImageModal()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="overflow-auto max-h-screen">
+                    <img id="modalImage" src="" alt="{{ $mapImage->title }}" class="w-full h-auto rounded-lg cursor-zoom-in">
+                </div>
+                <div class="mt-4 text-sm text-gray-500 text-center">
+                    Click the image to zoom | Click outside or press Escape to close
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openImageModal(imageSrc, title) {
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('modalTitle').textContent = title || 'Map Image';
+            document.getElementById('imageModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            // Reset zoom
+            const img = document.getElementById('modalImage');
+            img.style.transform = 'scale(1)';
+            img.style.cursor = 'zoom-in';
+            isZoomed = false;
+        }
+
+        // Close modal when clicking outside the image
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this || e.target.classList.contains('relative')) {
+                closeImageModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        // Zoom functionality for the modal image
+        let isZoomed = false;
+        document.getElementById('modalImage').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const img = this;
+            if (!isZoomed) {
+                img.style.transform = 'scale(1.5)';
+                img.style.cursor = 'zoom-out';
+                img.style.transition = 'transform 0.3s ease';
+                isZoomed = true;
+            } else {
+                img.style.transform = 'scale(1)';
+                img.style.cursor = 'zoom-in';
+                isZoomed = false;
+            }
+        });
+    </script>
 </body>
 </html>
