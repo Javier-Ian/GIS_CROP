@@ -34,6 +34,17 @@ class MapImageController extends Controller
             'gis_files.*' => 'nullable|file|max:50240', // 50MB max for GIS files
         ]);
 
+        // Additional validation for GIS file extensions
+        if ($request->hasFile('gis_files')) {
+            $allowedExtensions = ['shp', 'dbf', 'shx', 'prj', 'qgz', 'qlr', 'qmd', 'geojson', 'kml', 'kmz', 'gml', 'gpx'];
+            foreach ($request->file('gis_files') as $file) {
+                $extension = strtolower($file->getClientOriginalExtension());
+                if (!in_array($extension, $allowedExtensions)) {
+                    return back()->withErrors(['gis_files' => "The file '{$file->getClientOriginalName()}' must be a file of type: " . implode(', ', $allowedExtensions) . "."])->withInput();
+                }
+            }
+        }
+
         $gisFiles = [];
         $mapImagePath = null;
         $mainFilePath = null;
@@ -139,10 +150,24 @@ class MapImageController extends Controller
                 'planting_date' => 'nullable|date',
                 'land_status' => 'required|in:planted,harvested,fallow,prepared',
                 'map_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
-                'gis_files.*' => 'nullable|file|mimes:shp,dbf,shx,prj,qgz,qlr,qmd,geojson,kml,kmz,gml,gpx|max:51200',
+                'gis_files.*' => 'nullable|file|max:51200', // 50MB max for GIS files
                 'delete_gis_files' => 'nullable|array',
                 'delete_gis_files.*' => 'integer',
             ]);
+
+            // Additional validation for GIS file extensions
+            if ($request->hasFile('gis_files')) {
+                $allowedExtensions = ['shp', 'dbf', 'shx', 'prj', 'qgz', 'qlr', 'qmd', 'geojson', 'kml', 'kmz', 'gml', 'gpx'];
+                foreach ($request->file('gis_files') as $file) {
+                    $extension = strtolower($file->getClientOriginalExtension());
+                    if (!in_array($extension, $allowedExtensions)) {
+                        throw new \Illuminate\Validation\ValidationException(
+                            validator([], []),
+                            ['gis_files' => ["The file '{$file->getClientOriginalName()}' must be a file of type: " . implode(', ', $allowedExtensions) . "."]]
+                        );
+                    }
+                }
+            }
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation failed', ['errors' => $e->errors()]);
             return redirect()->back()->withErrors($e->errors())->withInput();
