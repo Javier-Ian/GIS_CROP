@@ -25,14 +25,14 @@ class MapImageController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'crop_type' => 'required|string|max:255',
-            'hectares' => 'required|numeric|min:0.01|max:99999.99',
-            'location' => 'nullable|string|max:255',
-            'planting_date' => 'nullable|date',
-            'land_status' => 'required|in:planted,harvested,fallow,prepared',
             'map_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
             'gis_files.*' => 'nullable|file|max:50240', // 50MB max for GIS files
         ]);
+
+        // Ensure at least one file is being uploaded
+        if (!$request->hasFile('map_image') && !$request->hasFile('gis_files')) {
+            return back()->withErrors(['files' => 'Please upload at least one file (map image or GIS files).'])->withInput();
+        }
 
         // Additional validation for GIS file extensions
         if ($request->hasFile('gis_files')) {
@@ -92,19 +92,10 @@ class MapImageController extends Controller
             }
         }
 
-        // Ensure we have at least one file
-        if (empty($mainFilePath) && empty($gisFiles)) {
-            return back()->withErrors(['files' => 'Please upload at least one file (map image or GIS files).']);
-        }
-
-        MapImage::create([
+        // Prepare data for creation
+        $data = [
             'title' => $request->title,
             'description' => $request->description,
-            'crop_type' => $request->crop_type,
-            'hectares' => $request->hectares,
-            'location' => $request->location,
-            'planting_date' => $request->planting_date,
-            'land_status' => $request->land_status,
             'filename' => $mainFileName ?: 'gis_files',
             'original_name' => $mainOriginalName ?: 'GIS Files',
             'file_path' => $mainFilePath,
@@ -113,7 +104,9 @@ class MapImageController extends Controller
             'file_size' => $mainFileSize,
             'mime_type' => $mainMimeType,
             'user_id' => auth()->id(),
-        ]);
+        ];
+
+        MapImage::create($data);
 
         return redirect()->route('dashboard')->with('success', 'Map and GIS files uploaded successfully!');
     }
@@ -123,32 +116,18 @@ class MapImageController extends Controller
         return view('maps.show-simple', compact('mapImage'));
     }
 
-    public function edit(MapImage $mapImage)
+    public function edit($id)
     {
-        return view('maps.edit', compact('mapImage'));
+        $mapImage = MapImage::findOrFail($id);
+        return view('maps.edit-fixed', compact('mapImage'));
     }
 
     public function update(Request $request, MapImage $mapImage)
     {
-        // Debug logging
-        \Log::info('Update request received for map ID: ' . $mapImage->id, [
-            'title' => $request->title,
-            'crop_type' => $request->crop_type,
-            'hectares' => $request->hectares,
-            'has_map_image' => $request->hasFile('map_image'),
-            'has_gis_files' => $request->hasFile('gis_files'),
-            'delete_gis_files' => $request->delete_gis_files,
-        ]);
-
         try {
             $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string|max:1000',
-                'crop_type' => 'required|string|max:100',
-                'hectares' => 'required|numeric|min:0.01|max:99999.99',
-                'location' => 'nullable|string|max:255',
-                'planting_date' => 'nullable|date',
-                'land_status' => 'required|in:planted,harvested,fallow,prepared',
                 'map_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
                 'gis_files.*' => 'nullable|file|max:51200', // 50MB max for GIS files
                 'delete_gis_files' => 'nullable|array',
@@ -249,11 +228,6 @@ class MapImageController extends Controller
         $updateData = [
             'title' => $request->title,
             'description' => $request->description,
-            'crop_type' => $request->crop_type,
-            'hectares' => $request->hectares,
-            'location' => $request->location,
-            'planting_date' => $request->planting_date,
-            'land_status' => $request->land_status,
             'gis_files' => $gisFiles,
             'map_image_path' => $mapImagePath,
         ];

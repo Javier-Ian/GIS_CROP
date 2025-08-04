@@ -10,11 +10,6 @@ class MapImage extends Model
     protected $fillable = [
         'title',
         'description',
-        'crop_type',
-        'hectares',
-        'location',
-        'planting_date',
-        'land_status',
         'filename',
         'original_name',
         'file_path',
@@ -27,8 +22,6 @@ class MapImage extends Model
 
     protected $casts = [
         'file_size' => 'integer',
-        'hectares' => 'decimal:2',
-        'planting_date' => 'date',
         'gis_files' => 'array',
     ];
 

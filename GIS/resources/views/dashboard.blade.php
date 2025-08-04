@@ -44,7 +44,7 @@
                             <h3 class="text-lg font-semibold mb-4">Welcome to GIS Crop Land Use Mapping</h3>
                             <p class="mb-4">{{ __("You're logged in!") }}</p>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-8">
                                 <div class="bg-blue-50 p-4 rounded-lg">
                                     <h4 class="font-semibold text-blue-800">Total Maps</h4>
                                     <p class="text-2xl font-bold text-blue-600">{{ \App\Models\MapImage::count() }}</p>
@@ -56,10 +56,6 @@
                                 <div class="bg-purple-50 p-4 rounded-lg">
                                     <h4 class="font-semibold text-purple-800">Recent Uploads</h4>
                                     <p class="text-2xl font-bold text-purple-600">{{ \App\Models\MapImage::whereDate('created_at', today())->count() }}</p>
-                                </div>
-                                <div class="bg-yellow-50 p-4 rounded-lg">
-                                    <h4 class="font-semibold text-yellow-800">Total Area</h4>
-                                    <p class="text-2xl font-bold text-yellow-600">{{ number_format(\App\Models\MapImage::sum('hectares'), 2) }} ha</p>
                                 </div>
                             </div>
 
@@ -87,9 +83,6 @@
                                                 </div>
                                                 <div class="p-3">
                                                     <h5 class="font-medium text-gray-900 text-sm mb-1 truncate">{{ $map->title }}</h5>
-                                                    @if($map->crop_type)
-                                                        <p class="text-xs text-green-600 font-medium mb-1">{{ $map->crop_type }} @if($map->hectares) • {{ number_format($map->hectares, 2) }} ha @endif</p>
-                                                    @endif
                                                     @if($map->description)
                                                         <p class="text-xs text-gray-600 mb-2 line-clamp-2">{{ Str::limit($map->description, 60) }}</p>
                                                     @endif
@@ -97,16 +90,6 @@
                                                         <span>{{ $map->user->name }}</span>
                                                         <span>{{ $map->created_at->diffForHumans() }}</span>
                                                     </div>
-                                                    @if($map->land_status)
-                                                        <div class="mt-1">
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                                                                {{ $map->land_status === 'planted' ? 'bg-green-100 text-green-800' : 
-                                                                   ($map->land_status === 'harvested' ? 'bg-yellow-100 text-yellow-800' : 
-                                                                   ($map->land_status === 'fallow' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800')) }}">
-                                                                {{ ucfirst($map->land_status) }}
-                                                            </span>
-                                                        </div>
-                                                    @endif
                                                     <div class="mt-2">
                                                         <a href="{{ route('maps.show', $map) }}" 
                                                            class="text-blue-600 hover:text-blue-800 text-xs font-medium">
@@ -139,38 +122,22 @@
                     <div id="upload-content" class="tab-content hidden">
                         <h3 class="text-lg font-semibold mb-4">Upload New GIS Map</h3>
                         
-                        <!-- Progress Steps -->
-                        <div class="mb-8">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div id="step1-indicator" class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-sm font-medium">
-                                        1
-                                    </div>
-                                    <div class="ml-3">
-                                        <p class="text-sm font-medium text-gray-900">Crop Information</p>
-                                        <p class="text-xs text-gray-500">Basic details</p>
-                                    </div>
-                                </div>
-                                <div class="w-20 h-0.5 bg-gray-300" id="step-connector"></div>
-                                <div class="flex items-center">
-                                    <div id="step2-indicator" class="flex items-center justify-center w-8 h-8 bg-gray-300 text-gray-600 rounded-full text-sm font-medium">
-                                        2
-                                    </div>
-                                    <div class="ml-3">
-                                        <p class="text-sm font-medium text-gray-500">File Upload</p>
-                                        <p class="text-xs text-gray-400">GIS data & images</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <form action="{{ route('maps.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                             @csrf
                             
-                            <!-- Step 1: Crop Information -->
-                            <div id="step1-content">
+                            <!-- General file upload error -->
+                            @error('files')
+                                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert">
+                                    <span class="block sm:inline">{{ $message }}</span>
+                                </div>
+                            @enderror
+                            
+                            <!-- Basic Information -->
+                            <div class="mb-6">
+                                <h4 class="text-md font-medium text-gray-900 mb-4">Basic Information</h4>
+                                
                                 <!-- Title -->
-                                <div>
+                                <div class="mb-4">
                                     <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
                                     <input type="text" name="title" id="title" value="{{ old('title') }}" 
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -190,92 +157,12 @@
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                     @enderror
                                 </div>
-
-                                <!-- Crop Type -->
-                                <div>
-                                    <label for="crop_type" class="block text-sm font-medium text-gray-700">Crop Type</label>
-                                    <select name="crop_type" id="crop_type" 
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        required>
-                                        <option value="">Select a crop type</option>
-                                        <option value="Rice" {{ old('crop_type') == 'Rice' ? 'selected' : '' }}>Rice</option>
-                                        <option value="Corn" {{ old('crop_type') == 'Corn' ? 'selected' : '' }}>Corn</option>
-                                        <option value="Wheat" {{ old('crop_type') == 'Wheat' ? 'selected' : '' }}>Wheat</option>
-                                        <option value="Soybeans" {{ old('crop_type') == 'Soybeans' ? 'selected' : '' }}>Soybeans</option>
-                                        <option value="Sugarcane" {{ old('crop_type') == 'Sugarcane' ? 'selected' : '' }}>Sugarcane</option>
-                                        <option value="Coconut" {{ old('crop_type') == 'Coconut' ? 'selected' : '' }}>Coconut</option>
-                                        <option value="Banana" {{ old('crop_type') == 'Banana' ? 'selected' : '' }}>Banana</option>
-                                        <option value="Vegetables" {{ old('crop_type') == 'Vegetables' ? 'selected' : '' }}>Vegetables</option>
-                                        <option value="Fruits" {{ old('crop_type') == 'Fruits' ? 'selected' : '' }}>Fruits</option>
-                                        <option value="Other" {{ old('crop_type') == 'Other' ? 'selected' : '' }}>Other</option>
-                                    </select>
-                                    @error('crop_type')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <!-- Hectares -->
-                                <div>
-                                    <label for="hectares" class="block text-sm font-medium text-gray-700">Area (Hectares)</label>
-                                    <input type="number" name="hectares" id="hectares" value="{{ old('hectares') }}" 
-                                        step="0.01" min="0.01" max="99999.99"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        placeholder="e.g., 2.50" required>
-                                    @error('hectares')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <!-- Location -->
-                                <div>
-                                    <label for="location" class="block text-sm font-medium text-gray-700">Location</label>
-                                    <input type="text" name="location" id="location" value="{{ old('location') }}" 
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        placeholder="e.g., Barangay San Jose, Municipality">
-                                    @error('location')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <!-- Planting Date -->
-                                <div>
-                                    <label for="planting_date" class="block text-sm font-medium text-gray-700">Planting Date</label>
-                                    <input type="date" name="planting_date" id="planting_date" value="{{ old('planting_date') }}" 
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                                    @error('planting_date')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <!-- Land Status -->
-                                <div>
-                                    <label for="land_status" class="block text-sm font-medium text-gray-700">Land Status</label>
-                                    <select name="land_status" id="land_status" 
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                        required>
-                                        <option value="planted" {{ old('land_status') == 'planted' ? 'selected' : '' }}>Planted</option>
-                                        <option value="harvested" {{ old('land_status') == 'harvested' ? 'selected' : '' }}>Harvested</option>
-                                        <option value="fallow" {{ old('land_status') == 'fallow' ? 'selected' : '' }}>Fallow</option>
-                                        <option value="prepared" {{ old('land_status') == 'prepared' ? 'selected' : '' }}>Prepared</option>
-                                    </select>
-                                    @error('land_status')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <!-- Next Button -->
-                                <div>
-                                    <button type="button" onclick="goToStep2()" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-flex items-center justify-center">
-                                        <span>Next: Upload Files</span>
-                                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </button>
-                                </div>
                             </div>
 
-                            <!-- Step 2: File Upload -->
-                            <div id="step2-content" class="hidden">
+                            <!-- File Uploads -->
+                            <div class="mb-6">
+                                <h4 class="text-md font-medium text-gray-900 mb-4">File Uploads</h4>
+                                
                                 <!-- GIS Files Upload -->
                                 <div class="mb-6">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">GIS Data Files</label>
@@ -323,22 +210,16 @@
                                         <img id="preview-image" src="" alt="Preview" class="max-w-full h-48 object-contain rounded-lg border border-gray-300">
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Action Buttons -->
-                                <div class="flex space-x-4">
-                                    <button type="button" onclick="goToStep1()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded inline-flex items-center justify-center">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                        </svg>
-                                        Back
-                                    </button>
-                                    <button type="submit" class="flex-1 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center justify-center">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                        </svg>
-                                        Upload Map
-                                    </button>
-                                </div>
+                            <!-- Submit Button -->
+                            <div class="mt-8 pt-6 border-t border-gray-200 flex justify-center">
+                                <button type="submit" class="bg-blue-500 hover:bg-blue-600 focus:ring-4 focus:ring-blue-300 text-white font-semibold rounded-lg text-base px-6 py-3.5 inline-flex items-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    Upload Map
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -362,9 +243,6 @@
                                         </div>
                                         <div class="p-4">
                                             <h4 class="font-semibold text-gray-900 mb-2">{{ $mapImage->title }}</h4>
-                                            @if($mapImage->crop_type)
-                                                <p class="text-sm text-green-600 font-medium mb-1">{{ $mapImage->crop_type }} @if($mapImage->hectares) • {{ number_format($mapImage->hectares, 2) }} hectares @endif</p>
-                                            @endif
                                             @if($mapImage->description)
                                                 <p class="text-sm text-gray-600 mb-2">{{ Str::limit($mapImage->description, 100) }}</p>
                                             @endif
@@ -372,16 +250,6 @@
                                                 <span>By {{ $mapImage->user->name }}</span>
                                                 <span>{{ $mapImage->created_at->diffForHumans() }}</span>
                                             </div>
-                                            @if($mapImage->land_status)
-                                                <div class="mb-2">
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                                        {{ $mapImage->land_status === 'planted' ? 'bg-green-100 text-green-800' : 
-                                                           ($mapImage->land_status === 'harvested' ? 'bg-yellow-100 text-yellow-800' : 
-                                                           ($mapImage->land_status === 'fallow' ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800')) }}">
-                                                        {{ ucfirst($mapImage->land_status) }}
-                                                    </span>
-                                                </div>
-                                            @endif
                                             <div class="mt-3 flex items-center space-x-2">
                                                 <a href="{{ route('maps.show', $mapImage) }}" 
                                                    class="text-blue-600 hover:text-blue-800 text-sm font-medium">
@@ -427,7 +295,7 @@
         </div>
     </div>
 
-    <script>
+        <script>
         function showTab(tabName) {
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
@@ -447,58 +315,6 @@
             const activeTab = document.getElementById(tabName + '-tab');
             activeTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
             activeTab.classList.add('border-blue-500', 'text-blue-600');
-        }
-
-        // Multi-step form navigation
-        function goToStep2() {
-            // Validate step 1 fields
-            const requiredFields = ['title', 'crop_type', 'hectares', 'land_status'];
-            let isValid = true;
-            
-            requiredFields.forEach(fieldName => {
-                const field = document.getElementById(fieldName);
-                if (!field.value.trim()) {
-                    field.classList.add('border-red-500');
-                    isValid = false;
-                } else {
-                    field.classList.remove('border-red-500');
-                }
-            });
-            
-            if (!isValid) {
-                alert('Please fill in all required fields before proceeding.');
-                return;
-            }
-            
-            // Update progress indicators
-            document.getElementById('step1-indicator').classList.remove('bg-blue-600', 'text-white');
-            document.getElementById('step1-indicator').classList.add('bg-green-600', 'text-white');
-            
-            document.getElementById('step2-indicator').classList.remove('bg-gray-300', 'text-gray-600');
-            document.getElementById('step2-indicator').classList.add('bg-blue-600', 'text-white');
-            
-            document.getElementById('step-connector').classList.remove('bg-gray-300');
-            document.getElementById('step-connector').classList.add('bg-green-600');
-            
-            // Switch content
-            document.getElementById('step1-content').classList.add('hidden');
-            document.getElementById('step2-content').classList.remove('hidden');
-        }
-        
-        function goToStep1() {
-            // Update progress indicators
-            document.getElementById('step1-indicator').classList.remove('bg-green-600');
-            document.getElementById('step1-indicator').classList.add('bg-blue-600', 'text-white');
-            
-            document.getElementById('step2-indicator').classList.remove('bg-blue-600', 'text-white');
-            document.getElementById('step2-indicator').classList.add('bg-gray-300', 'text-gray-600');
-            
-            document.getElementById('step-connector').classList.remove('bg-green-600');
-            document.getElementById('step-connector').classList.add('bg-gray-300');
-            
-            // Switch content
-            document.getElementById('step1-content').classList.remove('hidden');
-            document.getElementById('step2-content').classList.add('hidden');
         }
 
         // File handling
